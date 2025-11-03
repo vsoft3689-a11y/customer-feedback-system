@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>User Panel - Feedback</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-success">
+  <a class="navbar-brand" href="user.html">User Panel</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navMenu">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navMenu">
+    <ul class="navbar-nav ml-auto">
+      <li class="nav-item"><a class="nav-link" href="./user-products.html">Products</a></li>
+      <li class="nav-item"><a class="nav-link" href="./user-feedback.html">Feedback</a></li>
+      <li class="nav-item"><a class="nav-link" href="./order.html">My Orders</a></li>
+      <li class="nav-item"><span class="nav-link disabled">Logged in as: <strong id="userNameDisplay"></strong></span></li>
+      <li class="nav-item"><a class="nav-link" href="#" id="logoutBtn">Logout</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- Main Content -->
+<div class="container mt-4 flex-fill">
+  <h3>Your Feedback</h3>
+  
+  <!-- Feedback Form -->
+  <form id="feedbackForm" class="mb-4">
+    <input type="hidden" id="feedbackId" />
+    
+    <div class="form-group">
+      <label for="productSelect">Select Product</label>
+      <select id="productSelect" class="form-control" required>
+        <option value="">-- Choose product --</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="feedbackText">Feedback</label>
+      <textarea id="feedbackText" rows="3" class="form-control" required></textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="ratingInput">Rating (1–5)</label>
+      <input id="ratingInput" type="number" min="1" max="5" value="5" class="form-control" required />
+    </div>
+
+    <button class="btn btn-success" type="submit" id="submitBtn">Submit Feedback</button>
+    <button class="btn btn-secondary ml-2 d-none" type="button" id="cancelEditBtn">Cancel Edit</button>
+  </form>
+
+  <!-- Feedback Table -->
+  <h4>Previous Feedback</h4>
+  <table class="table table-bordered">
+    <thead class="thead-light">
+      <tr>
+        <th>Product</th>
+        <th>User</th>
+        <th>Comment</th>
+        <th>Rating</th>
+        <th>Admin Review</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="feedbackTableBody"></tbody>
+  </table>
+</div>
+
+<!-- Footer -->
+<footer class="bg-success text-white text-center py-3 mt-auto">
+  &copy; 2025 Feedback App
+</footer>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  $(function () {
+    const user = JSON.parse(localStorage.getItem("feedbackUser")) || { id: 0, name: "Guest" };
+    $("#userNameDisplay").text(user.name);
+
+    $("#logoutBtn").click(function (e) {
+      e.preventDefault();
+      localStorage.removeItem("feedbackUser");
+      window.location = "login.html";
+    });
+
+    function loadProducts() {
+      $.ajax({
+        url: "http://localhost:8080/api/products",
+        method: "GET",
+        success: function (products) {
+          const sel = $("#productSelect");
+          sel.empty().append('<option value="">-- Choose product --</option>');
+          products.forEach(p => sel.append(`<option value="${p.id}">${p.name}</option>`));
+        },
+        error: () => alert("Could not load products")
+      });
+    }
+
+    function loadFeedback() {
+      $.ajax({
+        url: "http://localhost:8080/api/feedback",
+        method: "GET",
+        success: function (feedbacks) {
+          const tbody = $("#feedbackTableBody");
+          tbody.empty();
+
+          if (!feedbacks || feedbacks.length === 0) {
+            tbody.append('<tr><td colspan="6">No feedback yet.</td></tr>');
+            return;
+          }
+
+          feedbacks.forEach(fb => {
+            const productName = fb.productName || "Unknown";
+            const userName = fb.userName || fb.user?.name || "Unknown";
+            const adminReview = fb.adminComment || "—";
+            const feedbackUserId = fb.user?.id || fb.userId || 0;
+            const isOwner = feedbackUserId === user.id;
+
+            tbody.append(`
+              <tr>
+                <td>${productName}</td>
+                <td>${userName}</td>
+                <td>${fb.comment}</td>
+                <td>${fb.rating}</td>
+                <td>${adminReview}</td>
+                <td>
+                  ${isOwner ? `
+                    <button class="btn btn-sm btn-primary editBtn"
+                      data-id="${fb.id}"
+                      data-pid="${fb.productId}"
+                      data-comment="${fb.comment}"
+                      data-rating="${fb.rating}">Edit</button>
+                    <button class="btn btn-sm btn-danger ml-1 deleteBtn" data-id="${fb.id}">Delete</button>
+                  ` : ''}
+                </td>
+              </tr>
+            `);
+          });
+        },
+        error: function (xhr) {
+          alert("Could not load feedback: " + xhr.status + " " + xhr.responseText);
+        }
+      });
+    }
+
+    $("#feedbackForm").submit(function (e) {
+      e.preventDefault();
+      const productId = $("#productSelect").val();
+      const comment = $("#feedbackText").val().trim();
+      const rating = parseInt($("#ratingInput").val());
+      const id = $("#feedbackId").val();
+
+      if (!productId || !comment) {
+        alert("Please select a product and write feedback.");
+        return;
+      }
+
+      const payload = {
+        user: { id: user.id, name: user.name },
+        product: { id: parseInt(productId) },
+        comment: comment,
+        rating: rating,
+        status: "Pending"
+      };
+
+      const opts = {
+        url: id ? `http://localhost:8080/api/feedback/${id}` : "http://localhost:8080/api/feedback",
+        method: id ? "PUT" : "POST",
+        contentType: "application/json",
+        data: JSON.stringify(payload),
+        success: function () {
+          alert(id ? "Feedback updated" : "Feedback submitted");
+          resetForm();
+          loadFeedback();
+        },
+        error: function (xhr) {
+          alert("Error: " + xhr.status + " " + xhr.responseText);
+        }
+      };
+
+      $.ajax(opts);
+    });
+
+    $("#cancelEditBtn").click(resetForm);
+
+    function resetForm() {
+      $("#feedbackForm")[0].reset();
+      $("#feedbackId").val("");
+      $("#submitBtn").text("Submit Feedback");
+      $("#cancelEditBtn").addClass("d-none");
+    }
+
+    $("#feedbackTableBody").on("click", ".editBtn", function () {
+      const btn = $(this);
+      $("#feedbackId").val(btn.data("id"));
+      $("#productSelect").val(btn.data("pid"));
+      $("#feedbackText").val(btn.data("comment"));
+      $("#ratingInput").val(btn.data("rating"));
+      $("#submitBtn").text("Update Feedback");
+      $("#cancelEditBtn").removeClass("d-none");
+    });
+
+    $("#feedbackTableBody").on("click", ".deleteBtn", function () {
+      const fid = $(this).data("id");
+      if (!confirm("Delete this feedback?")) return;
+
+      $.ajax({
+        url: `http://localhost:8080/api/feedback/${fid}`,
+        method: "DELETE",
+        success: function () {
+          alert("Feedback deleted");
+          loadFeedback();
+        },
+        error: function (xhr) {
+          alert("Error deleting: " + xhr.status + " " + xhr.responseText);
+        }
+      });
+    });
+
+    loadProducts();
+    loadFeedback();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background: #e9f7ef;
+      color: #155724;
+    }
+    .navbar-brand {
+      font-weight: 700;
+      font-size: 1.8rem;
+    }
+    .card {
+      margin-top: 50px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .btn-custom {
+      background-color:skyblue;
+      color: white;
+      font-weight: 600;
+    }
+    .btn-custom:hover {
+      background-color:deeppink;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+	<nav class="navbar navbar-expand-lg navbar-dark bg-info">
+  <a class="navbar-brand" href="#">Admin Panel</a>
+  <div class="collapse navbar-collapse">
+    <ul class="navbar-nav ml-auto">
+      <li class="nav-item"><a href="./admin-products.html" class="nav-link">Manage Products</a></li>
+      <li class="nav-item"><a href="./admin-feedback.html" class="nav-link">Manage Feedback</a></li>
+      <li class="nav-item"><a href="#" id="logoutBtn" class="nav-link">Logout</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container text-center">
+  <div class="card p-5">
+    <h1>Welcome to Admin Dashboard</h1>
+    <p class="lead">Use the links above to manage products and feedback.</p>
+    <a href="./admin-products.html" class="btn btn-custom btn-lg mr-3">Manage Products</a><br>
+    <a href="./admin-feedback.html" class="btn btn-custom btn-lg">Manage Feedback</a>
+  </div>
+</div>
+
+<footer class="bg-info text-white text-center py-3 mt-5">
+  &copy; 2025 Feedback App - Admin Panel
+</footer>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  $("#logoutBtn").click(function(e) {
+    e.preventDefault();
+    localStorage.removeItem("feedbackUser");
+    alert("Logged out");
+    window.location = "login.html";
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>User Panel - Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background: #f0f8ff;
+      color: #343a40;
+    }
+    .navbar-brand {
+      font-weight: 700;
+      font-size: 1.5rem;
+    }
+    .welcome-card {
+      margin-top: 40px;
+      padding: 40px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+  </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <a class="navbar-brand" href="user.html">User Panel</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navMenu" 
+            aria-controls="navMenu" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="./user-products.html">Products</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="./user-feedback.html">Feedback</a>
+        </li>
+		<li class="nav-item">
+			<a class="nav-link" href="./order.html">My Orders</a>
+		</li>
+        <li class="nav-item">
+          <span class="nav-link disabled">Logged in as: <strong id="userNameDisplay"></strong></span>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" id="logoutBtn">Logout</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container flex-fill">
+    <div class="welcome-card">
+      <h2>Welcome, <span id="userName"></span>!</h2>
+      <p>Use the navigation bar to browse products and give feedback.</p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-primary text-white text-center py-3 mt-auto">
+    &copy; 2025 Feedback App
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js"></script>
+
+  <script>
+    $(function () {
+      // For demo: set username from localStorage or dummy
+      const user = JSON.parse(localStorage.getItem("feedbackUser")) || {name: "Guest"};
+      $("#userNameDisplay, #userName").text(user.name);
+
+      $("#logoutBtn").click(function(e) {
+        e.preventDefault();
+        localStorage.removeItem("feedbackUser");
+        alert("Logged out");
+        window.location = "login.html";
+      });
+    });
+  </script>
+</body>
+</html>

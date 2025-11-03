@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin - Categorized Products</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body { background: #f0fff0; }
+    .navbar-brand { font-weight: bold; }
+    .product-img { max-width: 60px; max-height: 40px; }
+    .category-heading { margin-top: 30px; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-success">
+  <a class="navbar-brand" href="#">Admin Panel</a>
+  <div class="collapse navbar-collapse">
+    <ul class="navbar-nav ml-auto">
+      <li class="nav-item"><a href="./admin-feedback.html" class="nav-link active">Manage Feedback</a></li>
+      <li class="nav-item"><a href="#" id="logoutBtn" class="nav-link">Logout</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container mt-4">
+  <h3>Add / Edit Product by Category</h3>
+  <form id="productForm" enctype="multipart/form-data">
+    <input type="hidden" id="productId" value="" />
+    <div class="form-row">
+      <div class="form-group col-md-4">
+        <label>Category</label>
+        <select id="productCategory" class="form-control" required>
+          <option value="">-- Select Category --</option>
+          <option value="Vegetables">Vegetables</option>
+          <option value="Fruits">Fruits</option>
+          <option value="Dairy">Dairy</option>
+          <option value="Grains">Grains</option>
+        </select>
+      </div>
+      <div class="form-group col-md-4">
+        <label>Product Name</label>
+        <input type="text" id="productName" class="form-control" required />
+      </div>
+      <div class="form-group col-md-4">
+        <label>Price</label>
+        <input type="number" id="productPrice" class="form-control" min="0" step="0.01" required />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group col-md-4">
+        <label>Cost</label>
+        <input type="number" id="productCost" class="form-control" min="0" step="0.01" required />
+      </div>
+      <div class="form-group col-md-4">
+        <label>Discount (%)</label>
+        <input type="number" id="productDiscount" class="form-control" min="0" max="100" value="0" />
+      </div>
+      <div class="form-group col-md-4">
+        <label>Image</label>
+        <input type="file" id="productImage" class="form-control-file" accept="image/*" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="productDescription" class="form-control" rows="3"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-success" id="saveBtn">Save Product</button>
+    <button type="button" class="btn btn-secondary" id="cancelBtn" style="display: none;">Cancel Edit</button>
+  </form>
+
+  <h4 class="category-heading">Category-wise Product List</h4>
+  <div id="productList" class="mt-3"></div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  const API_BASE = "http://localhost:8080/api";
+
+  $(function() {
+    loadProducts();
+
+    $("#cancelBtn").click(function() {
+      resetForm();
+    });
+
+    $("#productForm").submit(function(e) {
+      e.preventDefault();
+
+      const id = $("#productId").val();
+      const isEdit = id !== "";
+
+      const formData = new FormData();
+      formData.append("category", $("#productCategory").val());
+      formData.append("name", $("#productName").val());
+      formData.append("price", $("#productPrice").val());
+      formData.append("cost", $("#productCost").val());
+      formData.append("discount", $("#productDiscount").val());
+      formData.append("description", $("#productDescription").val());
+
+      const img = $("#productImage")[0].files[0];
+      if (img) {
+        formData.append("image", img);
+      }
+
+      let url = `${API_BASE}/products/upload`;
+      let method = "POST";
+      if (isEdit) {
+        url = `${API_BASE}/products/${id}`;
+        method = "PUT";
+      }
+
+      $.ajax({
+        url: url,
+        method: method,
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function() {
+          alert("Product saved");
+          resetForm();
+          loadProducts();
+        },
+        error: function(xhr) {
+          alert("Error saving product");
+          console.error(xhr);
+        }
+      });
+    });
+
+    function resetForm() {
+      $("#productId").val("");
+      $("#productForm")[0].reset();
+      $("#saveBtn").text("Save Product");
+      $("#cancelBtn").hide();
+    }
+
+    function loadProducts() {
+      $.get(`${API_BASE}/products`, function(products) {
+        const grouped = {};
+        products.forEach(p => {
+          if (!grouped[p.category]) grouped[p.category] = [];
+          grouped[p.category].push(p);
+        });
+
+        const container = $("#productList");
+        container.empty();
+
+        for (const cat in grouped) {
+          container.append(`<h5 class="mt-4">${cat}</h5>`);
+          container.append(`<table class="table table-bordered">
+            <thead><tr>
+              <th>Name</th><th>Price</th><th>Discount</th><th>Image</th><th>Actions</th>
+            </tr></thead>
+            <tbody>
+              ${grouped[cat].map(p => {
+                let imageUrl = "No Image";
+                if (p.image) {
+                  if (p.image.startsWith("/")) {
+                    imageUrl = `http://localhost:8080${p.image}`;
+                  } else {
+                    imageUrl = `http://localhost:8080/images/${p.image}`;
+                  }
+                }
+                return `
+                <tr>
+                  <td>${p.name}</td>
+                  <td>$${p.price.toFixed(2)}</td>
+                  <td>${p.discount}%</td>
+                  <td>${imageUrl !== "No Image"
+                      ? `<img src="${imageUrl}" class="product-img" alt="${p.name}"/>`
+                      : "No Image"}</td>
+                  <td>
+                    <button class="btn btn-sm btn-primary edit-btn" data-id="${p.id}">Edit</button>
+                    <button class="btn btn-sm btn-danger delete-btn" data-id="${p.id}">Delete</button>
+                  </td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>`);
+        }
+      });
+    }
+
+    $("#productList").on("click", ".edit-btn", function() {
+      const pid = $(this).data("id");
+      $.get(`${API_BASE}/products/${pid}`, function(prod) {
+        $("#productId").val(prod.id);
+        $("#productCategory").val(prod.category);
+        $("#productName").val(prod.name);
+        $("#productPrice").val(prod.price);
+        $("#productCost").val(prod.cost);
+        $("#productDiscount").val(prod.discount);
+        $("#productDescription").val(prod.description);
+        $("#saveBtn").text("Update Product");
+        $("#cancelBtn").show();
+      });
+    });
+
+    $("#productList").on("click", ".delete-btn", function() {
+      const pid = $(this).data("id");
+      if (!confirm("Delete this product?")) return;
+      $.ajax({
+        url: `${API_BASE}/products/${pid}`,
+        method: "DELETE",
+        success: function() {
+          alert("Deleted");
+          loadProducts();
+        },
+        error: function() {
+          alert("Error deleting");
+        }
+      });
+    });
+
+    $("#logoutBtn").click(function(e) {
+      e.preventDefault();
+      localStorage.removeItem("feedbackUser");
+      window.location = "login.html";
+    });
+  });
+</script>
+
+</body>
+</html>
